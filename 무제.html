@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PersonaLib 독서 성향 테스트</title>
+
+<style>
+    :root {
+        --brand-green: #0b3d2e;
+        --brand-gray: #f5f5f5;
+        --text-dark: #222;
+        --text-light: #666;
+        --radius: 18px;
+        --transition: 0.35s ease;
+        --shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
+
+    body {
+        background: var(--brand-gray);
+        min-height:100vh;
+        display:flex;
+        justify-content:center;
+        padding:40px 20px;
+    }
+
+    .container {
+        background:white;
+        max-width:520px;
+        width:100%;
+        padding:40px 30px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn { from {opacity:0; transform: translateY(20px);} to {opacity:1; transform:translateY(0);} }
+
+    .logo {
+        width:160px;
+        height: auto;
+        margin: 20px auto;
+        display: block;
+    }
+
+    h1 {
+        font-size:26px;
+        font-weight:700;
+        color: var(--brand-green);
+        text-align:center;
+        margin-bottom:15px;
+    }
+
+    .question-box {
+        margin-top:20px;
+        padding:25px;
+        background:#fff;
+        border-radius:var(--radius);
+        box-shadow:0 4px 12px rgba(0,0,0,0.08);
+        animation: fadeIn 0.8s ease;
+    }
+
+    .question {
+        font-size:20px;
+        font-weight:600;
+        color: var(--text-dark);
+        margin-bottom:20px;
+    }
+
+    .options button {
+        width:100%;
+        padding:14px;
+        border:none;
+        border-radius:var(--radius);
+        margin-top:10px;
+        font-size:16px;
+        cursor:pointer;
+        background:#e9e9e9;
+        transition: var(--transition);
+    }
+    .options button:hover {
+        background:var(--brand-green);
+        color:white;
+        transform:translateY(-2px);
+    }
+
+    .progress {
+        height:10px;
+        background:#ddd;
+        border-radius:20px;
+        margin-top:25px;
+    }
+    .progress-inner {
+        height:100%;
+        width:0;
+        background:var(--brand-green);
+        border-radius:20px;
+        transition:0.4s ease;
+    }
+
+    /* 결과 */
+    .result {
+        display:none;
+        animation: fadeIn 0.8s ease;
+    }
+    .result h2 { font-size:24px; color:var(--brand-green); font-weight:700; text-align:center; }
+
+    .type-box {
+        margin-top:25px;
+        padding:25px;
+        background:white;
+        border-radius:var(--radius);
+        box-shadow:0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .books { margin-top:20px; }
+    .book {
+        background:#fafafa;
+        padding:15px;
+        margin-top:10px;
+        border-radius:var(--radius);
+        font-size:15px;
+        color:var(--text-dark);
+        box-shadow:0 3px 10px rgba(0,0,0,0.05);
+    }
+
+    /* 이미지 카드 */
+    #captureArea {
+        background:white;
+        padding:30px;
+        border-radius:var(--radius);
+        margin-top:30px;
+        display:none;
+    }
+
+    .capture-btn {
+        margin-top:25px;
+        width:100%;
+        padding:15px;
+        background:var(--brand-green);
+        color:white;
+        border:none;
+        border-radius:var(--radius);
+        font-size:16px;
+        cursor:pointer;
+        transition: var(--transition);
+    }
+    .capture-btn:hover { opacity:0.85; }
+
+    @media (max-width:480px) {
+        .container { padding:25px 20px; }
+        h1 { font-size:22px; }
+        .question { font-size:18px; }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <img src="logo.png" alt="PersonaLib logo" class="logo" />
+
+    <h1>PersonaLib 독서 성향 테스트</h1>
+
+    <!-- 질문 영역 -->
+    <div id="quiz"></div>
+
+    <!-- 결과 -->
+    <div id="result" class="result"></div>
+
+    <!-- 캡처 영역 -->
+    <button class="capture-btn" id="saveImageBtn" style="display:none;">결과 이미지 저장</button>
+</div>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<script>
+/* ----------------------
+  질문 (10문항)
+-----------------------*/
+const questions = [
+    "책을 고를 때 가장 중요한 요소는?",
+    "하루 독서 시간은?",
+    "새로운 분야 도전은?",
+    "책을 읽는 목적은?",
+    "완독 비율은?",
+    "선호하는 책 분위기는?",
+    "읽기 패턴은?",
+    "책 구매 빈도는?",
+    "읽은 책 기록은?",
+    "책을 추천받는 방식은?"
+];
+
+const answers = [
+    ["작가 중심", "베스트셀러 위주", "표지/디자인", "주제 의존"],
+    ["10분 이하", "30분~1시간", "1~2시간", "2시간 이상"],
+    ["거의 안함", "가끔", "자주", "항상"],
+    ["휴식", "지식 습득", "자기계발", "몰입/감정"],
+    ["50% 이하", "70%", "90%", "항상 완독"],
+    ["힐링/잔잔", "현실/사회", "철학적/깊이", "판타지/서사"],
+    ["몰아서 읽기", "틈틈이", "계획적", "랜덤"],
+    ["거의 안삼", "가끔", "정기적", "자주 충동구매"],
+    ["안함", "간단 메모", "정리함", "심층 기록"],
+    ["SNS", "지인", "알고리즘", "스스로 탐색"]
+];
+
+/* 12유형 점수 맵 */
+const types = {
+    "사색가형":0, "탐험가형":0, "지식형":0, "감성형":0,
+    "몰입형":0, "전략형":0, "휴식형":0, "수집가형":0,
+    "계획형":0, "감각형":0, "도전형":0, "자기계발형":0
+};
+
+/* 추천책 */
+const bookList = {
+    "사색가형":["명상록","호모 데우스","시골 빵집에서 자본론을 굽다","참을 수 없는 존재의 가벼움","죽음에 관하여"],
+    "탐험가형":["이갈리아의 딸들","총 균 쇠","사피엔스","나미야 잡화점","정의란 무엇인가"],
+    "지식형":["코스모스","시간의 역사","수학자가 들려주는 이야기","트렌드 코리아","세상은 데이터로"],
+    "감성형":["아몬드","하늘과 바람과 별과 시","밤의 여행자들","페인트","모순"],
+    "몰입형":["해리포터","왕좌의 게임","반지의 제왕","나니아 연대기","파운데이션"],
+    "전략형":["원씽","아웃라이어","핵심만 간단히 설명한 투자","그로스 해킹","초집중"],
+    "휴식형":["잠깐 쉬어가도 좋아","기분이 태도가 되지 않게","조용한 힘","식물의 위로","샌드위치의 비밀"],
+    "수집가형":["내가 사랑한 모든 책들","북 유튜버 추천 목록","세계의 책방","독서 기록의 기술","고전 50"],
+    "계획형":["하루 1페이지","타이탄의 도구들","에센셜리즘","7가지 습관","메모의 마법"],
+    "감각형":["미니멀리스트","디자인 오브 디자인","컬러의 힘","오브제의 세계","새로운 취향"],
+    "도전형":["도전의 기술","실패의 탄생","용기의 정치학","나는 위험한 사람입니다","배움의 발견"],
+    "자기계발형":["어른의 문해력","자기 혁명","두 번째 산","멘탈을 바꿔라","작심삼일 탈출"]
+};
+
+/* ----------------------------
+   UI 렌더링
+----------------------------- */
+let index = 0;
+const quizBox = document.getElementById("quiz");
+const resultBox = document.getElementById("result");
+
+renderQuestion();
+
+function renderQuestion(){
+    quizBox.innerHTML = `
+        <div class="question-box">
+            <div class="question">${index+1}. ${questions[index]}</div>
+            <div class="options">
+                ${answers[index].map((opt,i)=>`<button onclick="selectAnswer(${i})">${opt}</button>`).join("")}
+            </div>
+            <div class="progress"><div class="progress-inner" style="width:${(index/10)*100}%"></div></div>
+        </div>
+    `;
+}
+
+function selectAnswer(num) {
+    const keys = Object.keys(types);
+    types[keys[(index+num)%12]] += 1;
+
+    index++;
+    if(index<10) renderQuestion();
+    else showResult();
+}
+
+/* ----------------------------
+   결과 표시 + 이미지 카드 생성
+----------------------------- */
+function showResult(){
+    quizBox.style.display="none";
+
+    let topType = Object.entries(types).sort((a,b)=>b[1]-a[1])[0][0];
+
+    resultBox.style.display="block";
+    resultBox.innerHTML = `
+        <h2>당신의 독서 성향은<br>『${topType}』</h2>
+
+        <div class="type-box">
+            <h3 style="margin-bottom:10px;">📚 추천 도서 5권</h3>
+            <div class="books">
+                ${bookList[topType].map(book=>`<div class="book">${book}</div>`).join("")}
+            </div>
+        </div>
+
+        <div id="captureArea">
+            <h2>📚 PersonaLib 독서 성향 결과</h2>
+            <p style="margin-top:10px;font-weight:600;font-size:20px;color:var(--brand-green);">
+                ${topType}
+            </p>
+            ${bookList[topType].map(book=>`<div class="book">${book}</div>`).join("")}
+        </div>
+    `;
+
+    document.getElementById("saveImageBtn").style.display="block";
+}
+
+/* 이미지 저장 */
+document.getElementById("saveImageBtn").addEventListener("click",()=>{
+    const area = document.getElementById("captureArea");
+    html2canvas(area).then(canvas=>{
+        const link = document.createElement("a");
+        link.download = "PersonaLib_result.png";
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+});
+</script>
+</body>
+</html>
